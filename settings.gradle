@@ -1,0 +1,14 @@
+pluginManagement {
+    repositories {
+    	mavenLocal()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+    plugins {
+      id 'io.quarkus' version "1.5.2.Final"
+    }
+}
+
+rootProject.name = 'greenscape-portal'
+
+include 'microsite'

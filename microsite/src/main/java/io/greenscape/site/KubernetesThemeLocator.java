@@ -8,7 +8,9 @@ import java.util.Optional;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
-import io.fabric8.kubernetes.api.model.Service;
+import io.fabric8.kubernetes.api.model.extensions.Ingress;
+import io.fabric8.kubernetes.api.model.extensions.IngressSpec;
+import io.fabric8.kubernetes.api.model.extensions.IngressStatus;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.quarkus.cache.CacheResult;
 import io.quarkus.qute.TemplateLocator;
@@ -25,7 +27,7 @@ public class KubernetesThemeLocator implements TemplateLocator {
 		String[] paths = path.split(":");
 		String themeName = paths[0];
 		String service = locateService(themeName);
-		String templatePath = service + "/" + paths[1];
+		String templatePath = service + paths[1];
 		URL resource;
 		try {
 			resource = new URL(templatePath);
@@ -40,11 +42,13 @@ public class KubernetesThemeLocator implements TemplateLocator {
 	@CacheResult(cacheName = "theme")
 	private String locateService(String name) {
 		String url = kubeClient.getMasterUrl().getHost();
-		
-		List<Service> services = kubeClient.services().withLabel("app.kubernetes.io/name", name).list().getItems();
-		String ip = services.get(0).getSpec().getClusterIP();
-		Integer port = services.get(0).getSpec().getPorts().get(0).getNodePort();
-		return "http://"+url + ":" + port;
+
+		List<Ingress> ingresses = kubeClient.extensions().ingresses().withLabel("app.kubernetes.io/name", name).list()
+				.getItems();
+		IngressStatus ingressStatus = ingresses.get(0).getStatus();
+		String ip = ingressStatus.getLoadBalancer().getIngress().get(0).getIp();
+		String path = ingresses.get(0).getSpec().getRules().get(0).getHttp().getPaths().get(0).getPath();
+		return "http://" + ip + path;
 	}
 
 	private Variant guessVariant(String path) {

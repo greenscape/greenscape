@@ -1,6 +1,5 @@
 package io.greenscape.site;
 
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -9,11 +8,9 @@ import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.ResponseBuilder;
 import javax.ws.rs.core.UriInfo;
 
 import io.quarkus.qute.Engine;
@@ -33,25 +30,30 @@ public class SiteController {
 	@Inject
 	KubernetesThemeLocator themeLocator;
 
-	@Path("/{s:.*}")
+	@Path("/")
 	@GET
-//	@Produces(MediaType.TEXT_HTML)
-	public Response index(@Context UriInfo uriInfo) {
-		URI uri = uriInfo.getAbsolutePath();
-		Site site = buildSite();
+	public Response index() {
+		return handlePath("index.html");
+	}
 
-		Template pageTemplate = engine.getTemplate(site.getDefaultTheme().getName() + ":index.html");
+	@Path("/{path:.*}")
+	@GET
+	public Response subpath(@Context UriInfo uriInfo, @PathParam("path") String path) {
+		return handlePath(path);
+	}
+
+	private Response handlePath(String path) {
+		Site site = buildSite();
+		Template pageTemplate = engine.getTemplate(site.getDefaultTheme().getName() + ":" + path);
 		TemplateInstance templateInstance = pageTemplate.instance();
 		templateInstance.data("site", site);
 		templateInstance.data("page", site.getDefaultPage());
 		MediaType mediaType = MediaType.TEXT_PLAIN_TYPE;
 
-		if (uri.getPath().endsWith(".html") || uri.getPath().endsWith(".htm")) {
+		if (path.endsWith(".html") || path.endsWith(".htm")) {
 			mediaType = MediaType.TEXT_HTML_TYPE;
 		}
-		Response response = Response.ok(templateInstance).type(mediaType).build();
-
-		return response;
+		return Response.ok(templateInstance).type(mediaType).build();
 	}
 
 	public void customizeEngine(@Observes EngineBuilder engineBuilder) {

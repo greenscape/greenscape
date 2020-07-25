@@ -9,6 +9,6 @@ pluginManagement {
     }
 }
 
-rootProject.name = 'greenscape-portal'
+rootProject.name = 'greenscape'
 
 include 'microsite'
